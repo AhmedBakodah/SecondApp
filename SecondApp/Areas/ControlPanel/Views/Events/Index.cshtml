@@ -1,14 +1,33 @@
-﻿@model IEnumerable<SecondApp.Models.Event>
+﻿@using PagedList.Core
+@using PagedList.Core.Mvc
+@model IEnumerable<SecondApp.Models.Event>
 
 @{
     ViewData["Title"] = "Index";
 }
 
 <h1>Index</h1>
+@if (User.IsInRole("Admin"))
+{
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+}
+<form asp-action="Index" method="get">
+    <div class="">
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+        <input type="text" class="form-control" name="q" value="@ViewContext.HttpContext.Request.Query["q"]" />
+        <button class="btn btn-dark"> Search</button>
+    </div>
+</form>
+
+@if(TempData["Message"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Message"]
+    </div>
+}
+
 <table class="table">
     <thead>
         <tr>
@@ -34,32 +53,57 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Text)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.SubText)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Date)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Imageurl)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ImageText)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ImageSubText)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Text)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.SubText)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Date)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Imageurl)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ImageText)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ImageSubText)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id" asp-route-employeeId="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+
+<div class="row">
+    <div class="col-sm-12 col-md-7">
+        <pager class="pager-container" list="@((IPagedList)Model)"
+               options="@PagedListRenderOptions.Bootstrap4PageNumbersOnly"
+               asp-action="@ViewContext.RouteData.Values["Action"]"
+               param-page-number="page" />
+    </div>
+    <div class="col-sm-12 col-md-5">
+        <div class="dataTables_info float-right">صفحة @(((IPagedList)Model).PageNumber) من @(((IPagedList)Model).PageCount) الاجمالي @(((IPagedList)Model).TotalItemCount)</div>
+    </div>
+</div>
+
+@section Scripts {
+    @if (ViewContext.HttpContext.Request.Cookies["Email"] == null)
+    {
+        <script>
+            var email = prompt('للاشتراك في النشرو أدخل بريدك الالكتروني');
+            if(email){
+                location.href = "/ControlPanel/Events/SetCookie?email=" + email;
+            }
+        </script>
+    }
+}

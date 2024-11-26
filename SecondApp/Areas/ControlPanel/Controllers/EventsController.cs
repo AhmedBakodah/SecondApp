@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using PagedList.Core;
 using SecondApp.Data;
 using SecondApp.Models;
 using static System.Net.Mime.MediaTypeNames;
@@ -24,9 +26,21 @@ namespace SecondApp.Areas.ControlPanel.Controllers
         }
 
         // GET: ControlPanel/Events
-        public async Task<IActionResult> Index()
+        public IActionResult Index(string q, int page = 1)
         {
-            return View(await _context.Events.ToListAsync());
+            var events = _context.Events.AsQueryable();
+            if (!q.IsNullOrEmpty())
+            {
+                events = events.Where(x => x.Text!.Contains(q) || x.SubText!.Contains(q));
+            }
+            var pagedEvents = events.ToPagedList(page, 2);
+
+            if (User.IsInRole("Admin"))
+            {
+                return View("AdminView", pagedEvents);
+            }
+
+            return View(pagedEvents);
         }
 
         // GET: ControlPanel/Events/Details/5
@@ -70,14 +84,15 @@ namespace SecondApp.Areas.ControlPanel.Controllers
                 {
                     file.CopyTo(stream);
                 }
-                if(@event.SubText == @event.Text)
+                if (@event.SubText == @event.Text)
                 {
                     ModelState.AddModelError("SubText", "لايمكن أن ستاوي النص الاساسي مع النص الفرعي");
                 }
                 @event.Imageurl = name;
                 _context.Add(@event);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                TempData["Message"] = "تمت عميلة اللللللللل";
+                return RedirectToAction(nameof(Create));
             }
             return View(@event);
         }
@@ -134,10 +149,11 @@ namespace SecondApp.Areas.ControlPanel.Controllers
         }
 
         // GET: ControlPanel/Events/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? id, int employeeId)
         {
             if (id == null)
             {
+                var empId = HttpContext.Request.Query["EmployeeId"];
                 return NotFound();
             }
 
@@ -169,6 +185,12 @@ namespace SecondApp.Areas.ControlPanel.Controllers
         private bool EventExists(int id)
         {
             return _context.Events.Any(e => e.Id == id);
+        }
+
+        public ActionResult SetCookie(string email)
+        {
+            Response.Cookies.Append("Email", email);
+            return RedirectToAction(nameof(Index));
         }
     }
 }
